@@ -113,7 +113,7 @@ drug_combination_output <- function(
     
     # Create a list for this drug pair
     drug_pair_data <- list(
-      paste("Concentration", row_drug, column_drug, sep = " "),
+      paste0("Concentration ", row_drug, column_drug, sep = " "),
       mean_reading,
       median_reading,
       std_reading,
@@ -127,7 +127,7 @@ drug_combination_output <- function(
 
   # Convert the list to a data frame
   final_data <- do.call(rbind, average_readings)
-  colnames(final_data) <- c(paste('Concentration', row_drug, '_', column_drug), 
+  colnames(final_data) <- c(paste0('Concentration ', row_drug, '_', column_drug), 
                             'Average_Reading', 'Median_Reading',
                             'STD_Reading', 'n', 'Raw Readings')
   
@@ -158,19 +158,10 @@ define_saved_data_file <- function(
   saved_path, analyze, plate, drug_names
   ) {
   file.path(saved_path, paste0(analyze,
-                                gsub(" ", "_", plate), "_", 
-                                    substr(
-                                            unlist(
-                                              strsplit(drug_names[1], " ")
-                                            ), 1, 1
-                                    ), "_", 
-                                    substr(
-                                            unlist(
-                                              strsplit(drug_names[2], " ")
-                                            ), 1, 1
-                                    ),
-                                  ".csv"  
-                                )
+                                gsub(" ", "_", plate), "_",
+                                      drug_names[1], "_", drug_names[2],
+                                      ".csv"  
+                        )
   )
 }
 save_drug_data <- function(
@@ -184,18 +175,10 @@ save_drug_data <- function(
 
 
   drug_names <- names(drug_conc_ranges)
-  print(drug_names)
   saved_path <- file.path(output_dir, paste0(
                                           gsub(" ", "_", plate), "_", 
-                                          substr(
-                                            unlist(
-                                              strsplit(drug_names[1], " ")
-                                            ), 1, 1
-                                          ), "_", 
-                                          substr(
-                                            unlist(
-                                              strsplit(drug_names[2], " ")
-                                            ), 1, 1)))
+                                          drug_names[1], "_", 
+                                          drug_names[2]))
   if (!file.exists(saved_path)) {
     dir.create(saved_path, showWarnings = FALSE)
   }
@@ -210,47 +193,13 @@ save_drug_data <- function(
   saved_raw_analyzed_file <- define_saved_data_file(saved_path,
                                                     "Raw_Deconvoluted_",
                                                               plate, drug_names)
+  drug_screen_table <- convert_match_matrix_2_frame(drug_screen_table)
+  drug_screen_table <- format_match_data_frame(drug_screen_table)
   write.csv(drug_screen_table, saved_raw_analyzed_file,
-                                                  row.names = TRUE, na = "0")
-}
-
-drug_screen_viability <- function(
-  drug_data_table, output_path, drug_printer_file_path, gr = FALSE
-) {
-  drug_screen_table <- drug_data_table[[3]]
-  control_reading <- drug_screen_table[1, 1]
+                                                  row.names = FALSE, na = "0")
   
-  if (gr) {
-    viability <- drug_screen_table
-  } else {
-    viability <- (drug_screen_table / control_reading) * 100
-  }
   
-  # Read concentration unit
-  file_data <- read.xlsx(drug_printer_file_path, sheetName = "Tabular detail")
-  conc_unit <- unique(na.omit(file_data$`Conc. units`))
-  
-  if (length(conc_unit) > 1) {
-    stop("Only one drug concentration unit can be used for SynergyFinder.")
-  }
-  
-  write.csv(viability, file = output_path, row.names = FALSE, na = 0)
-  
-  if (conc_unit[1] != "nM") {
-    # Convert concentration to nM for proper axis labeling in SynergyFinder
-    viability_nm <- viability
-    
-    # Scale concentration to nM
-    colnames(viability_nm) <- colnames(viability_nm) * 1000
-    rownames(viability_nm) <- rownames(viability_nm) * 1000
-    
-    # Write to CSV with nM unit
-    output_path_nm <- paste0(tools::file_path_sans_ext(output_path),
-                                                            "_nM_Converted.csv")
-    write.csv(viability_nm, file = output_path_nm, row.names = FALSE, na = 0)
-  }
-  
-  return(viability)
+  return(saved_path)
 }
 
 create_data_table <- function(
@@ -258,7 +207,6 @@ create_data_table <- function(
 ) {
   matched_wells <- matched_data[[1]]
   drug_conc_ranges <- matched_data[[2]]
-   # Extract drug names excluding DMSO, a+Tw, and a+B
   #drug_names <- names(drug_conc_ranges)[!(names(drug_conc_ranges) %in% c("DMSO", "a+Tw", "a+B"))]
   drug_names <- names(drug_conc_ranges)
   if (length(drug_names) > 2) {
@@ -333,11 +281,11 @@ create_data_table <- function(
   return(list(drug_screen_table_mean, drug_screen_table_std, drug_screen_table))
 }
 
-format_drug_data <- function(
-  drug_data_table
+convert_match_matrix_2_frame <- function(
+  drug_data_matrix
 ) {
-  rows <- rownames(drug_data_table)
-  columns <- colnames(drug_data_table)
+  rows <- rownames(drug_data_matrix)
+  columns <- colnames(drug_data_matrix)
   num_columns <- length(columns)
   drug_data_frame <- data.frame(matrix(ncol = num_columns))
   colnames(drug_data_frame) <- columns
@@ -347,10 +295,49 @@ format_drug_data <- function(
         if (grepl("Concentration", col)) {
             record <- c(record, row)  
         } else {
-            record <- c(record, drug_data_table[row, col])
+            record <- c(record, drug_data_matrix[row, col])
         }
     }
     drug_data_frame <- rbind(drug_data_frame, record)
   }
+  drug_data_frame <- na.omit(drug_data_frame)
   return(drug_data_frame)
+}
+
+format_match_data_frame <- function(
+  drug_data_frame
+) {
+  max_n_reading = max(drug_data_frame$n)
+  columns <- colnames(drug_data_frame)
+  num_columns <- length(columns) - 1 + max_n_reading
+  format_drug_data_frame <- data.frame(matrix(ncol = num_columns))
+  format_columns_names <- columns[-length(columns)]
+  for (idx in 1:max_n_reading) {
+    col_name <- paste0("Raw Readings_", as.character(idx))
+    format_columns_names <- c(format_columns_names, col_name)
+  }
+  colnames(format_drug_data_frame) <- format_columns_names
+  for (row_idx in 1:nrow(drug_data_frame)){
+    row_data <- drug_data_frame[row_idx, ]
+    n_raw_readings <- row_data$n
+    raw_readings <- row_data$`Raw Readings`
+    raw_readings <- unlist(strsplit(raw_readings, ","))
+    raw_readings <- as.numeric(raw_readings)
+    record <- list()
+    for (col in columns) {
+        if (!grepl("Raw Readings", col)) {
+          record <- c(record, row_data[[col]])
+        }
+    }
+    for (raw_reading_idx in 1:max_n_reading) {
+      if (raw_reading_idx < n_raw_readings) {
+        record <- c(record, raw_readings[raw_reading_idx])
+      } else {
+        record <- c(record, 0)
+      }
+    }
+    format_drug_data_frame <- rbind(format_drug_data_frame, record)
+  }
+  format_drug_data_frame <- format_drug_data_frame[-1, ]
+  return(format_drug_data_frame)
 }
