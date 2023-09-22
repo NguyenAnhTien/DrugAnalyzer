@@ -1,4 +1,6 @@
 # @date: 2023-09-17
+# @desc:
+#   - This moudle is designed for working with R string
 
 split_string <- function(
   string

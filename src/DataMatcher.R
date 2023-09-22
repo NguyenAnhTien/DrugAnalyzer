@@ -1,5 +1,6 @@
 # @date: 2023-09-22
-# @desc: This module contains functions for comparing drug data
+# @desc:
+#   - This module contains functions for comparing drug data
 
 match_data <- function(
   drug_printer_data, plate_reader_data

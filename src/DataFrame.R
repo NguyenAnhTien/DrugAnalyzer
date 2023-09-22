@@ -1,5 +1,6 @@
 # @date: 2023-09-17
-# @desc: This module contains functiosn for working with Data Frame
+# @desc: 
+#   - This module contains functiosn for working with Data Frame
 
 source("Utils.R")
 

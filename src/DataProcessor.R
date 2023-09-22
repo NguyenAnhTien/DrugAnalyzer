@@ -1,6 +1,7 @@
 # @date: 2023-09-17
-# @Desc: This file contains the entry point of the program 
-#        the deconvolute_multidrug function
+# @Desc:
+#   - This file contains the entry point of the program 
+#       the deconvolute_multidrug function
 
 library(tools)
 source("DataHandler.R")
