@@ -14,7 +14,6 @@ deconvolute_multidrug <- function(
   plate_ids <- unique(drug_printer_data$plateID)
   viabilities <- list()
   for (plate in plate_ids) {
-    plate <- "19-529PT21-T1"
     plate_data_file <- subset(data_files_list,
             grepl(plate, data_files_list) & !endsWith(data_files_list, ".xlsx"))
     if (length(plate_data_file) > 1) {

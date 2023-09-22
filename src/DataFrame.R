@@ -29,6 +29,7 @@ sort_raw_deconvoluted_by_drug_two <- function(df) {
 
 sort_raw_deconvoluted_by_drug_one <- function(df) {
   column <- names(df)[1]
+  columns <- names(df)
   data <- list()
   
   for (idx in 1:nrow(df)) {
@@ -38,7 +39,6 @@ sort_raw_deconvoluted_by_drug_one <- function(df) {
     drug_two <- values[2]
     
     if (!is.na(drug_one) && !is.na(drug_two)) {
-        counter <- counter + 1
         if (drug_one %in% names(data)) {
             data[[drug_one]] <- append(data[[drug_one]], list(c(record = row,
                                                 value = as.numeric(drug_two))))
@@ -60,7 +60,6 @@ sort_raw_deconvoluted_by_drug_one <- function(df) {
   }
   
   df_ <- do.call(rbind, records)
-  
+  colnames(df_) <- columns
   return(df_)
 }
-
