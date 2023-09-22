@@ -184,7 +184,8 @@ save_drug_data <- function(
   }
   saved_analyzed_file <- define_saved_data_file(saved_path, "Analyzed_",
                                                               plate, drug_names)
-  write.csv(drug_screen_table_mean, saved_analyzed_file, row.names = FALSE, na = "0")
+  write.csv(drug_screen_table_mean, saved_analyzed_file,
+                                                    row.names = FALSE, na = "0")
   saved_std_analyzed_file <- define_saved_data_file(saved_path,
                                                     "STD_Analyzed_",
                                                               plate, drug_names)
@@ -220,7 +221,8 @@ create_data_table <- function(
   #drug_names <- names(drug_conc_ranges)[!(names(drug_conc_ranges) %in% c("DMSO", "a+Tw", "a+B"))]
   drug_names <- names(drug_conc_ranges)
   if (length(drug_names) > 2) {
-    if (!("DMSO" %in% drug_names) && !("a+Tw" %in% drug_names) && !("a+B" %in% drug_names)) {
+    if (!("DMSO" %in% drug_names) 
+         && !("a+Tw" %in% drug_names) && !("a+B" %in% drug_names)) {
       cat("Only two drug combinations can be processed, taking the first two drug names in:", drug_names[1:2], "\n")
     }
   }
@@ -237,7 +239,9 @@ create_data_table <- function(
   drug_screen_table_dict <- list()
   
   # Create enumerated drug_names dictionary for easy mapping
-  drug_conc_ranges <- drug_conc_ranges[!(names(drug_conc_ranges) %in% c("DMSO", "a+Tw", "a+B"))]
+  drug_conc_ranges <- drug_conc_ranges[
+                                       !(names(drug_conc_ranges) 
+                                       %in% c("DMSO", "a+Tw", "a+B"))]
   number_to_drug_name <- as.list(seq_along(drug_conc_ranges))
   drug_name_to_number <- setNames(number_to_drug_name, names(drug_conc_ranges))
   
@@ -263,21 +267,25 @@ create_data_table <- function(
     matrix_ind <- row_to_idx_dict[[as.character(ind)]]
     matrix_col <- col_to_idx_dict[[as.character(col)]]
 
-    drug_screen_table[matrix_ind, matrix_col] <- drug_screen_table[matrix_ind, matrix_col] + matched_wells[[well]]$reading
-    drug_screen_table_n[matrix_ind, matrix_col] <- drug_screen_table_n[matrix_ind, matrix_col] + 1
+    drug_screen_table[matrix_ind, matrix_col] <- drug_screen_table[matrix_ind,
+                                    matrix_col] + matched_wells[[well]]$reading
+    drug_screen_table_n[matrix_ind, matrix_col] <- drug_screen_table_n[
+                                                    matrix_ind, matrix_col] + 1
     
     
     # Create easily split key for values for going back to the data table
     key <- paste0(as.character(ind), "_", as.character(col))
-    drug_screen_table_dict[[key]] <- c(drug_screen_table_dict[[key]], matched_wells[[well]]$reading)
+    drug_screen_table_dict[[key]] <- c(drug_screen_table_dict[[key]],
+                                                matched_wells[[well]]$reading)
   }
   
   # Taking means and rounding to two decimal places
-  drug_screen_table_mean <- round(drug_screen_table / drug_screen_table_n, digits = 2)
+  drug_screen_table_mean <- round(drug_screen_table / drug_screen_table_n,
+                                                                     digits = 2)
   drug_screen_table_std <- drug_screen_std(drug_screen_table_dict,
                                             row_index, col_index)
   drug_screen_table <- drug_combination_output(drug_screen_table_dict,
-                                          drug_names[[2]], drug_names[[1]])
+                                              drug_names[[2]], drug_names[[1]])
 
   return(list(drug_screen_table_mean, drug_screen_table_std, drug_screen_table))
 }
