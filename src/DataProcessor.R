@@ -14,6 +14,7 @@ deconvolute_multidrug <- function(
   plate_ids <- unique(drug_printer_data$plateID)
   viabilities <- list()
   for (plate in plate_ids) {
+    plate <- "19-529PT21-T1"
     plate_data_file <- subset(data_files_list,
             grepl(plate, data_files_list) & !endsWith(data_files_list, ".xlsx"))
     if (length(plate_data_file) > 1) {
@@ -34,11 +35,11 @@ deconvolute_multidrug <- function(
                                                        combo_wells, drug_combo)
       matched_data <- match_data(filtered_drug_printer_data, plate_data)
       drug_data_table <- create_data_table(matched_data)
-      saved_path <- save_drug_data(plate, matched_data, drug_data_table,
+      drug_screen_table <- save_drug_data(plate, matched_data, drug_data_table,
                                                                     output_dir)
     }
   }
-  return(matched_data)
+  return(drug_screen_table)
 }
 
 filter_data_by_drug_combo <- function(

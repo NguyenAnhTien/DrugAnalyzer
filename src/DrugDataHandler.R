@@ -184,12 +184,12 @@ save_drug_data <- function(
   }
   saved_analyzed_file <- define_saved_data_file(saved_path, "Analyzed_",
                                                               plate, drug_names)
-  write.csv(drug_screen_table_mean, saved_analyzed_file, row.names = TRUE, na = "0")
+  write.csv(drug_screen_table_mean, saved_analyzed_file, row.names = FALSE, na = "0")
   saved_std_analyzed_file <- define_saved_data_file(saved_path,
                                                     "STD_Analyzed_",
                                                               plate, drug_names)
   write.csv(drug_screen_table_std, saved_std_analyzed_file,
-                                                  row.names = TRUE, na = "0")
+                                                  row.names = FALSE, na = "0")
   saved_raw_analyzed_file <- define_saved_data_file(saved_path,
                                                     "Raw_Deconvoluted_",
                                                               plate, drug_names)
@@ -198,8 +198,18 @@ save_drug_data <- function(
   write.csv(drug_screen_table, saved_raw_analyzed_file,
                                                   row.names = FALSE, na = "0")
   
-  
-  return(saved_path)
+  return(drug_screen_table)
+  #return(saved_path)
+}
+
+map_numbers_to_idx <- function(
+  numbers_list
+) {
+  numbers_to_idx_dict <- list()
+  for (idx in seq_along(numbers_list)) {
+    numbers_to_idx_dict[as.character(numbers_list[idx])] <- idx
+  }
+  return(numbers_to_idx_dict)
 }
 
 create_data_table <- function(
@@ -220,13 +230,10 @@ create_data_table <- function(
   row_index <- as.numeric(drug_conc_ranges[[drug_names[2]]])
   
   drug_screen_table <- matrix(0, nrow = length(row_index), ncol = length(col_index))
-  rownames(drug_screen_table) <- row_index
-  colnames(drug_screen_table) <- col_index
-  
   drug_screen_table_n <- matrix(0, nrow = length(row_index), ncol = length(col_index))
-  rownames(drug_screen_table_n) <- row_index
-  colnames(drug_screen_table_n) <- col_index
-  
+  row_to_idx_dict <- map_numbers_to_idx(row_index)
+  col_to_idx_dict <- map_numbers_to_idx(col_index)
+
   drug_screen_table_dict <- list()
   
   # Create enumerated drug_names dictionary for easy mapping
@@ -244,8 +251,7 @@ create_data_table <- function(
     for (drug in names(drug_dictionary)) {
       if (!(drug %in% c("DMSO", "a+Tw", "a+B"))) {
         drug_location <- drug_name_to_number[[drug]]
-        
-        if (drug_location) {
+        if (drug_location == 2) {
           ind <- drug_dictionary[[drug]]
         } else {
           col <- drug_dictionary[[drug]]
@@ -254,13 +260,12 @@ create_data_table <- function(
     }
     
     # Add value into proper cell in data tables
-    tryCatch({
-      drug_screen_table[ind, col] <- drug_screen_table[ind, col] + matched_wells[[well]]$reading
-      drug_screen_table_n[ind, col] <- drug_screen_table_n[ind, col] + 1
-    }, error = function(e) {
-      cat("\nCheck to make sure single or multi-parameter is correct.\n")
-      stop(e)
-    })
+    matrix_ind <- row_to_idx_dict[[as.character(ind)]]
+    matrix_col <- col_to_idx_dict[[as.character(col)]]
+
+    drug_screen_table[matrix_ind, matrix_col] <- drug_screen_table[matrix_ind, matrix_col] + matched_wells[[well]]$reading
+    drug_screen_table_n[matrix_ind, matrix_col] <- drug_screen_table_n[matrix_ind, matrix_col] + 1
+    
     
     # Create easily split key for values for going back to the data table
     key <- paste0(as.character(ind), "_", as.character(col))
@@ -273,10 +278,6 @@ create_data_table <- function(
                                             row_index, col_index)
   drug_screen_table <- drug_combination_output(drug_screen_table_dict,
                                           drug_names[[2]], drug_names[[1]])
-  
-  # drug_screen_table_mean <- as.data.frame(drug_screen_table_mean)
-  # drug_screen_table_std <- as.data.frame(drug_screen_table_std)
-  # drug_screen_table <- as.data.frame(drug_screen_table)
 
   return(list(drug_screen_table_mean, drug_screen_table_std, drug_screen_table))
 }
@@ -339,5 +340,10 @@ format_match_data_frame <- function(
     format_drug_data_frame <- rbind(format_drug_data_frame, record)
   }
   format_drug_data_frame <- format_drug_data_frame[-1, ]
+  format_drug_data_frame <- sort_raw_deconvoluted_by_drug_two(
+                                                        format_drug_data_frame)
+  format_drug_data_frame <- sort_raw_deconvoluted_by_drug_one(
+                                                          format_drug_data_frame)
   return(format_drug_data_frame)
 }
+
