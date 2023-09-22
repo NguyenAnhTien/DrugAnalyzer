@@ -1,4 +1,6 @@
 # @date: 2023-09-18
+# @desc: This module contains functions for organize comparing data into
+#          data frame.
 
 cal_drug_combinations <- function(
   drug_printer_data

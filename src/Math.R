@@ -1,4 +1,5 @@
 # @date: 2023-09-17
+# @desc: This module contains functions for calculating approximate numbers
 
 round_sig <- function(
   x, sig = 1, small_value = 1.0e-9
